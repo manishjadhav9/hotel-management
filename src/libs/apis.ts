@@ -1,4 +1,4 @@
-import { Room } from "@/app/models/room";
+import { Room } from "@/models/room";
 import sanityClient from "./sanity";
 import * as  queries from './sanityQueries';
 
