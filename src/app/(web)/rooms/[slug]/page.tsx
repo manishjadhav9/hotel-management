@@ -10,6 +10,10 @@ import { AiOutlineMedicineBox } from "react-icons/ai";
 import { GiSmokeBomb } from "react-icons/gi";
 import BookRoomCta from "@/components/BookRoomCta/BookRoomCta";
 import { useState } from "react";
+import toast from 'react-hot-toast';
+import axios from "axios";
+import stripe from "stripe";
+import { getStripe } from "@/libs/stripe";
 
 const RoomDetails = (props: { params: { slug: string } }) => {
   const {
@@ -40,8 +44,50 @@ const RoomDetails = (props: { params: { slug: string } }) => {
     return null;
   };
 
-  const handleBookNowClick = () => {
-    
+  const handleBookNowClick = async () => {
+    if (!checkinDate || !checkoutDate)
+      return toast.error('Please provide checkin / checkout date');
+
+    if (checkinDate > checkoutDate)
+      return toast.error('Please choose a valid checkin period');
+
+    const numberOfDays = calcNumDays();
+
+    const hotelRoomSlug = room.slug.current;
+
+    const stripe = await getStripe();
+
+    //  Integrate Stripe
+    try {
+      const { data: stripeSession } = await axios.post('/api/stripe', {
+        checkinDate,
+        checkoutDate,
+        adults,
+        children: noOfChildren,
+        numberOfDays,
+        hotelRoomSlug,
+      });
+      
+      if (stripe) {
+        const result = await stripe.redirectToCheckout({
+          sessionId: stripeSession.id,
+        });
+
+        if (result.error) {
+          toast.error('Payment Failed');
+        }
+      }
+    } catch (error) {
+      console.log('Error: ', error);
+      toast.error('An error occured');
+    }
+  };
+
+  const calcNumDays = () => {
+    if (!checkinDate || !checkoutDate) return;
+    const timeDiff = checkoutDate.getTime() - checkinDate.getTime();
+    const noOfDays = Math.ceil(timeDiff / (24 * 60 * 60 * 1000));
+    return noOfDays;
   };
 
   return (
