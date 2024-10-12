@@ -1,7 +1,7 @@
 'use client';
 
 export default function Error({
-  error,
+  // error,
   reset,
 }: {
   error: Error & { digest?: string };

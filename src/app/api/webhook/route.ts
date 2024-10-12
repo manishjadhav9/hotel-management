@@ -9,7 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: "2024-09-30.acacia",
 });
 
-export async function POST(req: Request, res: Response) {
+export async function POST(req: Request) {
   const reqBody = await req.text();
   const sig = req.headers.get("stripe-signature");
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -19,9 +19,13 @@ export async function POST(req: Request, res: Response) {
   try {
     if (!sig || !webhookSecret) return;
     event = stripe.webhooks.constructEvent(reqBody, sig, webhookSecret);
-  } catch (error: any) {
-    return new NextResponse(`Webhook Error: ${error.message}`, { status: 500 });
-  }
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+        return new NextResponse(`Webhook Error: ${error.message}`, { status: 500 });
+    } else {
+        return new NextResponse('Unknown Webhook Error', { status: 500 });
+    }
+}
 
   // load our event
   switch (event.type) {
