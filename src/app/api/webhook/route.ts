@@ -21,19 +21,21 @@ export async function POST(req: Request) {
     event = stripe.webhooks.constructEvent(reqBody, sig, webhookSecret);
   } catch (error: unknown) {
     if (error instanceof Error) {
-        return new NextResponse(`Webhook Error: ${error.message}`, { status: 500 });
+      return new NextResponse(`Webhook Error: ${error.message}`, { status: 500 });
     } else {
-        return new NextResponse('Unknown Webhook Error', { status: 500 });
+      return new NextResponse('Unknown Webhook Error', { status: 500 });
     }
-}
+  }
 
-  // load our event
+  // Load our event
   switch (event.type) {
-    case checkout_session_completed:
+    case checkout_session_completed: {
       const session = event.data.object;
 
-      const {
-        metadata: {
+      const { metadata } = session;
+
+      if (metadata) {
+        const {
           adults,
           checkinDate,
           checkoutDate,
@@ -43,31 +45,33 @@ export async function POST(req: Request) {
           user,
           discountPrice,
           totalPrice,
-        },
-      } = session;
+        } = metadata;
 
-      await createBooking({
-        adults: Number(adults),
-        checkinDate,
-        checkoutDate,
-        children: Number(children),
-        hotelRoom,
-        numberOfDays: Number(numberOfDays),
-        discount: Number(discountPrice),
-        totalPrice: Number(totalPrice),
-        user,
-      });
+        await createBooking({
+          adults: Number(adults),
+          checkinDate,
+          checkoutDate,
+          children: Number(children),
+          hotelRoom,
+          numberOfDays: Number(numberOfDays),
+          discount: Number(discountPrice),
+          totalPrice: Number(totalPrice),
+          user,
+        });
 
-      //update hotel room
-      await updateHotelRoom(hotelRoom);
-      
-      return NextResponse.json("Booking successful", {
-        status: 200,
-        statusText: "Booking Successful",
-      });
+        // Update hotel room
+        await updateHotelRoom(hotelRoom);
 
+        return NextResponse.json("Booking successful", {
+          status: 200,
+          statusText: "Booking Successful",
+        });
+      }
+      break; // Ensure to break if no metadata is found
+    }
     default:
       console.log(`Unhandled event type ${event.type}`);
+      break; // Add a break here to explicitly end the default case
   }
 
   return NextResponse.json("Event Received", {
