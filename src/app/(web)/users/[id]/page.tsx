@@ -196,7 +196,8 @@ const UserDetails = (props: { params: { id: string } }) => {
           )}
 
           {currentNav === "amount" ? (
-            userBookings && <Chart userBookings={userBookings} />
+            userBookings &&
+            Array.isArray(userBookings) && <Chart userBookings={userBookings} />
           ) : (
             <></>
           )}
